@@ -96,7 +96,7 @@ export default function Index() {
 
   return (
     // Fundo principal: Branco
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white px-4">
       {/* Header com fundo branco e borda verde sutil */}
       <header className="border-b border-green-100 bg-white sticky top-0 z-10 shadow-sm">
         <div className="container py-3 flex items-center gap-3">
