@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { Product } from "@/db/schema"; // Importando do Drizzle
+import type { Product } from "@/db/schema";
+import { Badge } from "lucide-react";
 
 interface ProductCarouselProps {
   products: Product[];
@@ -10,10 +11,9 @@ interface ProductCarouselProps {
 export function ProductCarousel({ products }: ProductCarouselProps) {
   const [current, setCurrent] = useState(0);
   
-  // Filtra produtos com imagem e disponíveis (Drizzle usa imageUrl e camelCase)
   const available = products
     .filter((p) => p.imageUrl && p.status === "available")
-    .slice(0, 10);
+    .slice(0, 8);
 
   const next = useCallback(() => {
     if (available.length === 0) return;
@@ -29,51 +29,50 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
   if (available.length === 0) return null;
 
   return (
-    <div className="relative w-full h-48 sm:h-64 md:h-72 overflow-hidden bg-green-900">
+    <div className="relative w-full h-56 sm:h-72 md:h-80 overflow-hidden bg-green-900">
       {available.map((product, i) => (
         <div
           key={product.id}
-          className="absolute inset-0 transition-all duration-700 ease-in-out"
+          className="absolute inset-0 transition-all duration-1000 ease-in-out"
           style={{
             opacity: i === current ? 1 : 0,
-            transform: i === current ? "scale(1)" : "scale(1.05)",
+            transform: i === current ? "scale(1)" : "scale(1.1)",
           }}
         >
           <img
             src={product.imageUrl!}
             alt={product.name}
-            className="w-full h-full object-cover opacity-80" // Leve opacidade para o gradiente agir
+            className="w-full h-full object-cover opacity-70"
             loading={i === 0 ? "eager" : "lazy"}
           />
         </div>
       ))}
 
-      {/* Gradiente: Verde Escuro -> Azul Marinho -> Transparente */}
-      <div className="absolute inset-0 bg-linear-to-t from-green-900/90 via-blue-900/40 to-transparent" />
+      {/* Gradiente ajustado para Tailwind moderno */}
+      <div className="absolute inset-0 bg-gradient-to-t from-green-900 via-green-900/40 to-transparent" />
       
       <div className="absolute inset-0 flex items-end">
-        <div className="container pb-6 md:pb-8">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-            Bazar Escolar Sustentável 🌱
+        <div className="container pb-8 md:pb-12 px-6">
+          <Badge className="bg-teal-400 text-green-950 font-bold mb-3 border-0">Destaques do Bazar</Badge>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-md leading-tight">
+            Moda com Propósito 🌱
           </h2>
-          <p className="mt-1.5 text-sm sm:text-base text-teal-50 max-w-lg leading-relaxed drop-shadow">
-            Roupas, calçados e brinquedos a preços acessíveis. Reserve online e retire na 
-            <span className="font-semibold text-teal-300"> Escola Salesiana!</span>
+          <p className="mt-2 text-xs sm:text-sm text-teal-50 max-w-md leading-relaxed drop-shadow font-medium">
+            Cada peça conta uma história. Garanta a sua online e ajude nosso projeto social.
           </p>
         </div>
       </div>
 
-      {/* Indicadores (Dots) em Branco/Verde Água */}
       {available.length > 1 && (
-        <div className="absolute bottom-4 right-6 flex gap-1.5">
+        <div className="absolute bottom-6 right-8 flex gap-2">
           {available.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === current ? "w-6 bg-teal-400" : "w-2 bg-white/50 hover:bg-white/80"
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === current ? "w-8 bg-teal-400" : "w-2 bg-white/40 hover:bg-white/80"
               }`}
-              aria-label={`Ir para slide ${i + 1}`}
+              aria-label={`Slide ${i + 1}`}
             />
           ))}
         </div>
