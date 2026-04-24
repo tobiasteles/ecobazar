@@ -5,10 +5,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
-// Removido Supabase, usaremos uma action futuramente
-import { ShoppingCart, Trash2, Loader2, CheckCircle, X } from "lucide-react";
+import { ShoppingCart, Trash2, Loader2, CheckCircle, AlertTriangle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ReservationReceipt } from "@/components/ReservationReceipt";
 
@@ -24,13 +22,17 @@ export function CartDrawer({ onReserved }: CartDrawerProps) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [receiptData, setReceiptData] = useState<{
-    items: typeof items;
-    total: number;
-    name: string;
-    email: string;
-    date: string;
-  } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+
+  const pixKey = "094.257.101-04";
+
+  const copyPix = () => {
+    navigator.clipboard.writeText(pixKey);
+    setCopied(true);
+    toast.success("Chave PIX copiada!");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const resetForm = () => {
     setName("");
@@ -40,23 +42,14 @@ export function CartDrawer({ onReserved }: CartDrawerProps) {
     setReceiptData(null);
   };
 
-  const handleClose = (val: boolean) => {
-    if (!val) resetForm();
-    setOpen(val);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim() || !email.trim()) {
-      toast.error("Preencha todos os campos.");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      // Aqui chamaremos sua Server Action do Next.js
       const response = await fetch("/api/reservations", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productIds: items.map((p) => p.id),
           customerName: name,
@@ -65,147 +58,170 @@ export function CartDrawer({ onReserved }: CartDrawerProps) {
         }),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error || "Erro na reserva");
+      if (!response.ok) throw new Error("Erro ao processar reserva");
 
       setReceiptData({
         items: [...items],
         total,
-        name: name.trim(),
-        email: email.trim(),
+        name,
+        email,
         date: new Date().toLocaleDateString("pt-BR"),
       });
+      
       setStep("success");
       onReserved();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erro ao reservar. Tente novamente.";
-      toast.error(errorMessage);
+      console.error(err);
+      toast.error("Não foi possível finalizar. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDone = () => {
-    clearCart();
-    handleClose(false);
-  };
-
   return (
-    <Sheet open={open} onOpenChange={handleClose}>
+    <Sheet open={open} onOpenChange={(val) => { setOpen(val); if(!val) resetForm(); }}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative border-green-100 hover:bg-green-50 text-green-700">
-          <ShoppingCart className="h-5 w-5" />
+        <Button variant="outline" size="icon" className="relative border-green-100 hover:bg-green-50">
+          <ShoppingCart className="h-5 w-5 text-green-700" />
           {count > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-blue-500 text-white border-0 shadow-sm">
+            <span className="absolute -top-2 -right-2 h-5 w-5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
               {count}
-            </Badge>
+            </span>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md flex flex-col bg-white">
-        {step === "success" && receiptData ? (
-          <div className="flex flex-col h-full">
-            <SheetHeader>
-              <SheetTitle className="flex items-center gap-2 text-green-900">
-                <CheckCircle className="h-5 w-5 text-teal-500" />
-                Reserva confirmada!
-              </SheetTitle>
-            </SheetHeader>
-            <div className="flex-1 overflow-auto mt-4">
-              <ReservationReceipt {...receiptData} />
-            </div>
-            <div className="pt-4 space-y-2 border-t border-green-100">
-              <Button onClick={handleDone} className="w-full bg-teal-500 hover:bg-teal-600 text-white border-0">
-                Fechar
+
+      <SheetContent className="w-full sm:max-w-md flex flex-col bg-white p-0">
+        <div className="flex flex-col h-full p-6">
+          
+          {step === "success" ? (
+            <div className="flex flex-col h-full animate-in fade-in zoom-in duration-300">
+              <div className="text-center py-6">
+                <div className="h-16 w-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-10 w-10" />
+                </div>
+                <h2 className="text-xl font-bold text-green-900">Reserva Realizada!</h2>
+                <p className="text-sm text-green-600">Agora é só realizar o PIX e retirar no evento.</p>
+              </div>
+              <div className="flex-1 overflow-auto border-y border-dashed border-gray-200 my-4 py-4">
+                <ReservationReceipt {...receiptData} />
+              </div>
+              <Button onClick={() => { clearCart(); setOpen(false); }} className="w-full bg-teal-500 hover:bg-teal-600">
+                Concluir
               </Button>
             </div>
-          </div>
-        ) : step === "form" ? (
-          <div className="flex flex-col h-full">
-            <SheetHeader>
-              <SheetTitle className="text-green-900">Seus dados</SheetTitle>
-            </SheetHeader>
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="cart-name" className="text-green-800">Nome completo</Label>
-                <Input id="cart-name" value={name} onChange={(e) => setName(e.target.value)} className="border-green-100 focus-visible:ring-teal-400" placeholder="Seu nome" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cart-phone" className="text-green-800">Telefone</Label>
-                <Input id="cart-phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="border-green-100 focus-visible:ring-teal-400" placeholder="(61) 99999-9999" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cart-email" className="text-green-800">E-mail</Label>
-                <Input id="cart-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-green-100 focus-visible:ring-teal-400" placeholder="seu@email.com" required />
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 text-sm border border-green-100">
-                <p className="text-green-700">{items.length} {items.length === 1 ? "item" : "itens"}</p>
-                <p className="text-lg font-bold text-teal-700">R$ {total.toFixed(2).replace(".", ",")}</p>
-              </div>
-              <div className="flex-1" />
-              <div className="space-y-2">
-                <Button type="submit" className="w-full bg-teal-500 hover:bg-teal-600 text-white border-0 shadow-md" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Confirmar Reserva
-                </Button>
-                <Button type="button" variant="ghost" className="w-full text-green-600 hover:bg-green-50" onClick={() => setStep("cart")}>
-                  Voltar ao carrinho
-                </Button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="flex flex-col h-full">
-            <SheetHeader>
-              <SheetTitle className="flex items-center gap-2 text-green-900">
-                <ShoppingCart className="h-5 w-5 text-teal-500" />
-                Carrinho ({count})
-              </SheetTitle>
-            </SheetHeader>
-            <div className="flex-1 overflow-auto mt-4 space-y-3">
-              {items.length === 0 ? (
-                <div className="text-center py-12 text-green-600/50">
-                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>Seu carrinho está vazio</p>
-                </div>
-              ) : (
-                items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 bg-green-50/50 border border-green-100 rounded-lg p-3">
-                    <img
-                      src={item.imageUrl || "/placeholder.svg"}
-                      alt={item.name}
-                      className="h-14 w-14 rounded-md object-cover border border-green-100"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-green-900 truncate">{item.name}</p>
-                      <p className="text-teal-600 font-bold text-sm">
-                        R$ {Number(item.price).toFixed(2).replace(".", ",")}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-red-500 hover:bg-red-50" onClick={() => removeItem(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+          ) : step === "form" ? (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="text-green-900">Finalizar Reserva</SheetTitle>
+              </SheetHeader>
+
+              {/* BOX DO PIX */}
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="bg-blue-500 p-1.5 rounded-lg text-white">
+                    <AlertTriangle className="h-4 w-4" />
                   </div>
-                ))
+                  <div>
+                    <p className="text-sm font-bold text-blue-900 leading-tight">Pagamento via PIX</p>
+                    <p className="text-[11px] text-blue-700">Para garantir seus itens, pague agora e guarde o comprovante.</p>
+                  </div>
+                </div>
+                
+                <div 
+                  onClick={copyPix}
+                  className="bg-white border border-blue-200 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 transition-colors group"
+                >
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-blue-400">Chave PIX (CNPJ/CPF)</p>
+                    <p className="font-mono font-bold text-blue-900">{pixKey}</p>
+                  </div>
+                  {copied ? <Check className="h-4 w-4 text-teal-500" /> : <Copy className="h-4 w-4 text-blue-300 group-hover:text-blue-500" />}
+                </div>
+                
+                <p className="text-[10px] text-center mt-3 text-blue-500 italic">
+                  * Reservas sem pagamento expiram às 10h no dia 30/05.
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-green-800">Seu Nome</Label>
+                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Como quer ser chamado?" required className="rounded-xl border-green-100" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-green-800">WhatsApp</Label>
+                  <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" required className="rounded-xl border-green-100" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-green-800">E-mail</Label>
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="para receber o comprovante" required className="rounded-xl border-green-100" />
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-gray-100">
+                  <div className="flex justify-between mb-4">
+                    <span className="text-green-700 font-medium">Total a pagar</span>
+                    <span className="text-xl font-black text-teal-600">R$ {total.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full bg-teal-500 hover:bg-teal-600 h-12 rounded-xl text-md font-bold shadow-lg shadow-teal-100">
+                    {loading ? <Loader2 className="animate-spin" /> : "Confirmar e Reservar"}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setStep("cart")} className="w-full mt-2 text-gray-400 text-xs">
+                    Voltar ao carrinho
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+          ) : (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="flex items-center gap-2 text-green-900">
+                  <ShoppingCart className="h-5 w-5 text-teal-500" />
+                  Carrinho
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-auto -mx-2 px-2 space-y-3">
+                {items.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                    <ShoppingCart className="h-12 w-12 mb-2 opacity-10" />
+                    <p className="text-sm italic">O carrinho está vazio</p>
+                  </div>
+                ) : (
+                  items.map((item) => (
+                    <div key={item.id} className="flex gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                      <img src={item.imageUrl!} className="h-16 w-16 rounded-xl object-cover" />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-green-900 line-clamp-1">{item.name}</p>
+                        <p className="text-teal-600 font-bold">R$ {Number(item.price).toFixed(2).replace(".", ",")}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="text-red-300 hover:text-red-500">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {items.length > 0 && (
+                <div className="pt-6 border-t border-gray-100 mt-4">
+                  <div className="flex justify-between mb-4">
+                    <span className="text-gray-500 font-medium">Total</span>
+                    <span className="text-xl font-black text-teal-600">R$ {total.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <Button onClick={() => setStep("form")} className="w-full bg-teal-500 hover:bg-teal-600 h-12 rounded-xl text-md font-bold">
+                    Continuar
+                  </Button>
+                  <Button variant="ghost" onClick={clearCart} className="w-full mt-2 text-red-400 text-xs">
+                    Esvaziar carrinho
+                  </Button>
+                </div>
               )}
             </div>
-            {items.length > 0 && (
-              <div className="pt-4 space-y-3 border-t border-green-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-green-700">Total</span>
-                  <span className="text-xl font-bold text-teal-700">R$ {total.toFixed(2).replace(".", ",")}</span>
-                </div>
-                <Button className="w-full bg-teal-500 hover:bg-teal-600 text-white border-0 shadow-md" onClick={() => setStep("form")}>
-                  Finalizar Reserva
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full text-green-500 hover:bg-green-50" onClick={clearCart}>
-                  Limpar carrinho
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );

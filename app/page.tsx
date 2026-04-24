@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import type { Product } from "@/db/schema";
 import { ProductCard } from "@/components/ProductCard";
 import { CategoryFilter } from "@/components/CategoryFilter";
@@ -36,7 +37,7 @@ export default function Index() {
   const [sort, setSort] = useState("newest");
   const queryClient = useQueryClient();
 
-  const { data: products, isLoading, isError } = useQuery<Product[]>({
+  const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
       const response = await fetch("/api/products");
@@ -155,7 +156,7 @@ export default function Index() {
              </div>
              <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center flex flex-col items-center justify-center">
                 <MapPin className="h-5 w-5 text-blue-500" />
-                <p className="text-xs font-bold text-green-900">Pátio</p>
+                <p className="text-xs font-bold text-green-900">Estande do 6º ano</p>
              </div>
           </div>
         </div>
@@ -207,7 +208,7 @@ export default function Index() {
         <div className="flex items-center justify-center gap-1.5 text-sm text-green-700 font-medium">
           <span>Desenvolvido com</span>
           <Heart className="h-4 w-4 text-blue-500 fill-blue-500" />
-          <span>pela Escola Salesiana NB</span>
+          <span>pelo 6º Ano - Escola Salesiana NB</span>
         </div>
       </footer>
     </div>
