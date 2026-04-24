@@ -17,7 +17,7 @@ import {
   CalendarDays,
   MapPin,
   Heart,
-  Info
+  Info,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,13 +48,13 @@ export default function Index() {
 
   const filtered = useMemo(() => {
     if (!products) return [];
-    
+
     let result = [...products];
 
     // 1. Filtro de Categoria (Normalizando para minúsculo)
     if (category !== "all") {
-      result = result.filter((p) => 
-        p.category.toLowerCase() === category.toLowerCase()
+      result = result.filter(
+        (p) => p.category.toLowerCase() === category.toLowerCase(),
       );
     }
 
@@ -64,7 +64,7 @@ export default function Index() {
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          (p.description && p.description.toLowerCase().includes(q))
+          (p.description && p.description.toLowerCase().includes(q)),
       );
     }
 
@@ -74,19 +74,25 @@ export default function Index() {
       const priceB = b.price;
 
       switch (sort) {
-        case "name_asc": return a.name.localeCompare(b.name, "pt-BR");
-        case "price_asc": return priceA - priceB;
-        case "price_desc": return priceB - priceA;
+        case "name_asc":
+          return a.name.localeCompare(b.name, "pt-BR");
+        case "price_asc":
+          return priceA - priceB;
+        case "price_desc":
+          return priceB - priceA;
         case "newest":
-        default: 
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        default:
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
       }
     });
 
     return result;
   }, [products, category, search, sort]);
 
-  const availableCount = products?.filter((p) => p.status === "available").length ?? 0;
+  const availableCount =
+    products?.filter((p) => p.status === "available").length ?? 0;
   const totalCount = products?.length ?? 0;
 
   if (isLoading) {
@@ -102,15 +108,31 @@ export default function Index() {
       <header className="border-b border-green-100 bg-white sticky top-0 z-10 shadow-sm px-4">
         <div className="container py-3 flex items-center gap-3">
           <div className="h-11 w-11 rounded-xl bg-teal-500 flex items-center justify-center shadow-md overflow-hidden border border-teal-100">
-            <img className="h-full w-full object-cover" src="/logo.jpeg" alt="Logo" />
+            <img
+              className="h-full w-full object-cover"
+              src="/logo.jpeg"
+              alt="Logo"
+            />
           </div>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-green-900 leading-tight tracking-tight">EcoBazar</h1>
-            <p className="text-[10px] sm:text-xs text-green-700 font-medium italic">Escola Salesiana NB · 6º Ano</p>
+            <h1 className="text-lg font-bold text-green-900 leading-tight tracking-tight">
+              EcoBazar
+            </h1>
+            <p className="text-[10px] sm:text-xs text-green-700 font-medium italic">
+              Escola Salesiana NB · 6º Ano
+            </p>
           </div>
-          <CartDrawer onReserved={() => queryClient.invalidateQueries({ queryKey: ["products"] })} />
+          <CartDrawer
+            onReserved={() =>
+              queryClient.invalidateQueries({ queryKey: ["products"] })
+            }
+          />
           <Link href="/admin">
-            <Button variant="ghost" size="icon" className="text-green-600 hover:bg-green-50 transition-colors">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-green-600 hover:bg-green-50 transition-colors"
+            >
               <Settings className="h-5 w-5" />
             </Button>
           </Link>
@@ -134,7 +156,8 @@ export default function Index() {
           <Alert className="bg-blue-50 border-blue-200 text-blue-800 rounded-xl">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-xs">
-              <strong>Regra de Reserva:</strong> Itens reservados sem Pix expiram às 10h.
+              <strong>Regra de Reserva:</strong> Itens reservados sem Pix
+              expiram às 10h.
             </AlertDescription>
           </Alert>
         </div>
@@ -142,22 +165,30 @@ export default function Index() {
         {/* Stats */}
         <div className="container mt-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-             <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center">
-                <p className="text-2xl font-bold text-green-800">{totalCount}</p>
-                <p className="text-[10px] uppercase text-green-600 font-bold">Produtos</p>
-             </div>
-             <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center">
-                <p className="text-2xl font-bold text-teal-600">{availableCount}</p>
-                <p className="text-[10px] uppercase text-green-600 font-bold">Disponíveis</p>
-             </div>
-             <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center flex flex-col items-center justify-center">
-                <CalendarDays className="h-5 w-5 text-blue-500" />
-                <p className="text-xs font-bold text-green-900">30/05</p>
-             </div>
-             <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center flex flex-col items-center justify-center">
-                <MapPin className="h-5 w-5 text-blue-500" />
-                <p className="text-xs font-bold text-green-900">Estande do 6º ano</p>
-             </div>
+            <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center">
+              <p className="text-2xl font-bold text-green-800">{totalCount}</p>
+              <p className="text-[10px] uppercase text-green-600 font-bold">
+                Produtos
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center">
+              <p className="text-2xl font-bold text-teal-600">
+                {availableCount}
+              </p>
+              <p className="text-[10px] uppercase text-green-600 font-bold">
+                Disponíveis
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center flex flex-col items-center justify-center">
+              <CalendarDays className="h-5 w-5 text-blue-500" />
+              <p className="text-xs font-bold text-green-900">30/05</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-green-100 p-3 text-center flex flex-col items-center justify-center">
+              <MapPin className="h-5 w-5 text-blue-500" />
+              <p className="text-xs font-bold text-green-900">
+                Estande do 6º ano
+              </p>
+            </div>
           </div>
         </div>
 
