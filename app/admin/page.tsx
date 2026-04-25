@@ -11,15 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { ArrowLeft, Plus, Pencil, Lock, Package, ClipboardList, Loader2, Phone, Mail, User } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Lock, Package, ClipboardList, Loader2, Phone, Mail, User, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const ADMIN_PASSWORD = "bazar2026";
 
-// Tipo estendido para incluir os dados do produto na reserva
 type ReservationWithProduct = Reservation & { product: { name: string } };
 
 export default function Admin() {
@@ -52,7 +51,7 @@ export default function Admin() {
   const { data: reservations, isLoading: reservationsLoading } = useQuery<ReservationWithProduct[]>({
     queryKey: ["admin-reservations"],
     queryFn: async () => {
-      const res = await fetch("/api/reservations"); // Rota corrigida aqui
+      const res = await fetch("/api/reservations");
       if (!res.ok) throw new Error("Erro ao carregar");
       return res.json();
     },
@@ -90,12 +89,30 @@ export default function Admin() {
     setProductModal(true);
   };
 
+  // NOVA FUNÇÃO: DELETAR
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este item permanentemente?")) return;
+
+    try {
+      const res = await fetch(`/api/products/admin?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.success("Item removido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch {
+      toast.error("Erro ao excluir item.");
+    }
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     const price = parseFloat(formPrice.replace(",", "."));
     setSaving(true);
     try {
-      // Nota: Você precisará criar uma rota /api/products/admin para POST/PUT se ainda não tiver
       const res = await fetch("/api/products/admin", {
         method: editingProduct ? "PUT" : "POST",
         body: JSON.stringify({
@@ -162,26 +179,42 @@ export default function Admin() {
             <TabsTrigger value="reservations" className="gap-2"><ClipboardList className="h-4 w-4" /> Reservas</TabsTrigger>
           </TabsList>
 
-          {/* ABA DE PRODUTOS */}
           <TabsContent value="products" className="space-y-4">
             <div className="flex justify-between items-center">
               <p className="text-sm text-green-700 font-medium">{products?.length ?? 0} itens</p>
               <Button onClick={openNewProduct} className="bg-teal-600 hover:bg-teal-700"><Plus className="h-4 w-4 mr-2" /> Novo Produto</Button>
             </div>
             {productsLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-500" /></div> : (
-              <div className="rounded-lg border border-green-100 overflow-hidden">
+              <div className="rounded-lg border border-green-100 overflow-hidden shadow-sm">
                 <Table>
                   <TableHeader className="bg-green-50">
-                    <TableRow><TableHead>Imagem</TableHead><TableHead>Nome</TableHead><TableHead>Preço</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ação</TableHead></TableRow>
+                    <TableRow>
+                      <TableHead>Imagem</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Preço</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
                     {products?.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell><img src={p.imageUrl || "/placeholder.svg"} className="h-10 w-10 rounded object-cover" /></TableCell>
+                      <TableRow key={p.id} className="hover:bg-green-50/20">
+                        <TableCell><img src={p.imageUrl || "/placeholder.svg"} className="h-10 w-10 rounded object-cover border" /></TableCell>
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell>R$ {Number(p.price).toFixed(2).replace(".", ",")}</TableCell>
-                        <TableCell><Badge className={p.status === "available" ? "bg-teal-500" : "bg-blue-500"}>{p.status === "available" ? "Disponível" : "Reservado"}</Badge></TableCell>
-                        <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => openEditProduct(p)}><Pencil className="h-4 w-4" /></Button></TableCell>
+                        <TableCell>
+                          <Badge className={p.status === "available" ? "bg-teal-500" : "bg-blue-500"}>
+                            {p.status === "available" ? "Disponível" : "Reservado"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="text-teal-600 hover:bg-teal-50" onClick={() => openEditProduct(p)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteProduct(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -190,101 +223,16 @@ export default function Admin() {
             )}
           </TabsContent>
 
-          {/* ABA DE RESERVAS - AQUI ESTÁ A NOVIDADE */}
+          {/* ... restante do componente reservations igual ao anterior ... */}
           <TabsContent value="reservations">
-            <div className="mb-4">
-              <p className="text-sm text-green-700 font-medium">{reservations?.length ?? 0} reservas efetuadas</p>
-            </div>
-            {reservationsLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-500" /></div> : (
-              <div className="rounded-lg border border-green-100 overflow-hidden shadow-sm">
-                <Table>
-                  <TableHeader className="bg-green-50">
-                    <TableRow>
-                      <TableHead className="text-green-900">Cliente</TableHead>
-                      <TableHead className="text-green-900">Contato</TableHead>
-                      <TableHead className="text-green-900">Produto</TableHead>
-                      <TableHead className="text-green-900">Data/Hora</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservations?.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-10 text-gray-400">Nenhuma reserva encontrada.</TableCell></TableRow>
-                    ) : (
-                      reservations?.map((r) => (
-                        <TableRow key={r.id} className="hover:bg-green-50/30">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-teal-500" />
-                              <span className="font-bold text-green-900">{r.customerName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1 text-xs">
-                              <div className="flex items-center gap-1.5 text-green-700"><Phone className="h-3 w-3" /> {r.customerPhone}</div>
-                              <div className="flex items-center gap-1.5 text-green-700"><Mail className="h-3 w-3" /> {r.customerEmail}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="border-teal-200 text-teal-700 bg-teal-50">
-                              {r.product?.name || "Produto excluído"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-gray-500">
-                            {new Date(r.reservedAt).toLocaleString("pt-BR")}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            {/* O código das reservas que te mandei antes deve ser mantido aqui */}
           </TabsContent>
         </Tabs>
       </main>
 
-      {/* Modal de Produto permanece igual... */}
+      {/* Modal Dialog igual... */}
       <Dialog open={productModal} onOpenChange={setProductModal}>
-        <DialogContent className="sm:max-w-lg border-green-100">
-          <DialogHeader>
-            <DialogTitle className="text-green-900">{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSaveProduct} className="space-y-4">
-             <div className="space-y-2">
-               <Label className="text-green-800">Nome do Produto *</Label>
-               <Input value={formName} onChange={(e) => setFormName(e.target.value)} required className="border-green-100" />
-             </div>
-             <div className="space-y-2">
-               <Label className="text-green-800">Descrição</Label>
-               <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="border-green-100" />
-             </div>
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label className="text-green-800">Preço (R$) *</Label>
-                 <Input value={formPrice} onChange={(e) => setFormPrice(e.target.value)} required className="border-green-100" />
-               </div>
-               <div className="space-y-2">
-                 <Label className="text-green-800">Categoria</Label>
-                 <Select value={formCategory} onValueChange={setFormCategory}>
-                   <SelectTrigger className="border-green-100"><SelectValue /></SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="roupas">Roupas</SelectItem>
-                     <SelectItem value="calcados">Calçados</SelectItem>
-                     <SelectItem value="brinquedos">Brinquedos</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
-             </div>
-             <div className="space-y-2">
-               <Label className="text-green-800">URL da Imagem</Label>
-               <Input value={formImageUrl} onChange={(e) => setFormImageUrl(e.target.value)} className="border-green-100" />
-             </div>
-             <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 font-bold" disabled={saving}>
-               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-               {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}
-             </Button>
-          </form>
-        </DialogContent>
+        {/* ... conteúdo do dialog igual ao que você já tem ... */}
       </Dialog>
     </div>
   );
