@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next"
 
 // Configuração da fonte Outfit - Mais encorpada e legível que a Geist
 const outfit = Outfit({
