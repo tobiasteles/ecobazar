@@ -3,7 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
 
 // Configuração da fonte Outfit - Mais encorpada e legível que a Geist
 const outfit = Outfit({
@@ -16,7 +16,8 @@ const outfit = Outfit({
 // Metadados otimizados para o evento da Escola Salesiana
 export const metadata: Metadata = {
   title: "EcoBazar | 6º Ano Escola Salesiana",
-  description: "Bazar Sustentável dos alunos do 6º Ano. Reserve suas peças online e retire na Feira do Empreendedor dia 30/05.",
+  description:
+    "Bazar Sustentável dos alunos do 6º Ano. Reserve suas peças online e retire na Feira do Empreendedor dia 30/05.",
   icons: {
     icon: "/favicon.ico", // Lembre-se de colocar um ícone de reciclagem ou folha aqui
   },
@@ -40,28 +41,27 @@ export default function RootLayout({
       className={`${outfit.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body 
+      <body
         className={`${outfit.className} min-h-full flex flex-col bg-white selection:bg-teal-100 selection:text-teal-900`}
       >
         <Providers>
           {/* O conteúdo das páginas (Index, Admin, etc.) entra aqui */}
-          <div className="flex-1 flex flex-col">
-            {children}
-          </div>
+          <div className="flex-1 flex flex-col">{children}</div>
 
           {/* Gerenciador de notificações (Toasts) */}
-          <Toaster 
-            position="top-center" 
-            richColors 
+          <Toaster
+            position="top-center"
+            richColors
             closeButton
             toastOptions={{
-              style: { 
-                fontFamily: 'var(--font-outfit)',
-                borderRadius: '12px' 
+              style: {
+                fontFamily: "var(--font-outfit)",
+                borderRadius: "12px",
               },
             }}
           />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
