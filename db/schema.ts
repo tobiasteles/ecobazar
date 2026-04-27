@@ -2,7 +2,14 @@ import { pgTable, text, timestamp, doublePrecision, pgEnum, uuid } from "drizzle
 import { relations } from "drizzle-orm";
 
 // 1. Definição dos Enums
-export const productCategoryEnum = pgEnum("product_category", ["roupas", "calcados", "brinquedos"]);
+export const productCategoryEnum = pgEnum("product_category", [
+  "roupas", 
+  "calcados", 
+  "brinquedos", 
+  "livros", // Adicionado
+  "acessorios", // Adicionado
+  "outros" // Adicionado
+]);
 export const productStatusEnum = pgEnum("product_status", ["available", "reserved"]);
 
 // 2. Tabela de Produtos
