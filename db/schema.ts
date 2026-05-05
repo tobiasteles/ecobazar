@@ -1,18 +1,17 @@
 import { pgTable, text, timestamp, doublePrecision, pgEnum, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-// 1. Definição dos Enums
 export const productCategoryEnum = pgEnum("product_category", [
   "roupas", 
   "calcados", 
   "brinquedos", 
-  "livros", // Adicionado
-  "acessorios", // Adicionado
-  "outros" // Adicionado
+  "livros", 
+  "acessorios", 
+  "outros"
 ]);
+
 export const productStatusEnum = pgEnum("product_status", ["available", "reserved"]);
 
-// 2. Tabela de Produtos
 export const products = pgTable("products", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -20,12 +19,12 @@ export const products = pgTable("products", {
   price: doublePrecision("price").notNull(),
   imageUrl: text("image_url"),
   category: productCategoryEnum("category").notNull(),
+  size: text("size"), // Novo campo para tamanho
   status: productStatusEnum("status").default("available").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 3. Tabela de Reservas
 export const reservations = pgTable("reservations", {
   id: uuid("id").primaryKey().defaultRandom(),
   productId: uuid("product_id")
@@ -37,7 +36,6 @@ export const reservations = pgTable("reservations", {
   reservedAt: timestamp("reserved_at").defaultNow().notNull(),
 });
 
-// 4. Definição de Relacionamentos (Drizzle Relations)
 export const productsRelations = relations(products, ({ many }) => ({
   reservations: many(reservations),
 }));
@@ -49,8 +47,6 @@ export const reservationsRelations = relations(reservations, ({ one }) => ({
   }),
 }));
 
-// Tipos para uso no Frontend/Server Actions
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
 export type Reservation = typeof reservations.$inferSelect;
-export type NewReservation = typeof reservations.$inferInsert;

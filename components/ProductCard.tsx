@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Product } from "@/db/schema";
-import { ShoppingCart, Shirt, Footprints, Gamepad2, Check } from "lucide-react";
+import { 
+  ShoppingCart, Shirt, Footprints, Gamepad2, 
+  Check, Ruler, Book, Glasses, Package 
+} from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -12,12 +15,18 @@ const categoryLabels: Record<string, string> = {
   roupas: "Roupas",
   calcados: "Calçados",
   brinquedos: "Brinquedos",
+  livros: "Livros",
+  acessorios: "Acessórios",
+  outros: "Outros",
 };
 
 const categoryIcons: Record<string, React.ReactNode> = {
   roupas: <Shirt className="h-3.5 w-3.5" />,
   calcados: <Footprints className="h-3.5 w-3.5" />,
   brinquedos: <Gamepad2 className="h-3.5 w-3.5" />,
+  livros: <Book className="h-3.5 w-3.5" />,
+  acessorios: <Glasses className="h-3.5 w-3.5" />,
+  outros: <Package className="h-3.5 w-3.5" />,
 };
 
 interface ProductCardProps {
@@ -25,7 +34,7 @@ interface ProductCardProps {
   index?: number;
 }
 
-export function ProductCard({ product, index = 0 }: ProductCardProps) {
+export function ProductCard({ product }: ProductCardProps) {
   const { addItem, removeItem, isInCart } = useCart();
   const isReserved = product.status === "reserved";
   const inCart = isInCart(product.id);
@@ -42,40 +51,23 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   };
 
   return (
-    <Card
-      className="overflow-hidden border-green-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group bg-white rounded-2xl"
-      // Removi opacity-0 e animate-fade-in-up que estavam escondendo o card
-    >
+    <Card className="overflow-hidden border-green-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group bg-white rounded-2xl">
       <div className="relative aspect-square overflow-hidden bg-green-50">
         <img
           src={product.imageUrl || "/placeholder.svg"}
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
         />
         
         {isReserved && (
           <div className="absolute inset-0 bg-green-900/40 backdrop-blur-[2px] flex items-center justify-center">
             <Badge className="bg-white text-green-900 text-xs font-bold px-3 py-1 gap-1 border-0">
-              <Check className="h-3 w-3" />
-              Reservado
+              <Check className="h-3 w-3" /> Reservado
             </Badge>
           </div>
         )}
 
-        {inCart && !isReserved && (
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-blue-500 border-0 gap-1 shadow-md text-white font-bold">
-              <ShoppingCart className="h-3 w-3" />
-              No carrinho
-            </Badge>
-          </div>
-        )}
-
-        <Badge
-          variant="outline"
-          className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-teal-700 border-teal-100 text-[10px] font-bold gap-1 shadow-sm"
-        >
+        <Badge variant="outline" className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-teal-700 border-teal-100 text-[10px] font-bold gap-1 shadow-sm">
           {categoryIcons[product.category as keyof typeof categoryIcons]}
           {categoryLabels[product.category as keyof typeof categoryLabels]}
         </Badge>
@@ -87,6 +79,13 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           <p className="text-[11px] text-green-600/80 line-clamp-2 mt-1 min-h-[32px]">
             {product.description || "Peça selecionada para o bazar sustentável."}
           </p>
+          
+          {/* Tag de Tamanho */}
+          {product.size && (
+            <div className="flex items-center gap-1 mt-2 text-[10px] font-bold text-teal-600 bg-teal-50 w-fit px-2 py-0.5 rounded-full border border-teal-100">
+              <Ruler className="h-3 w-3" /> {product.size}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between pt-1">
@@ -100,11 +99,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             onClick={handleToggleCart}
             disabled={isReserved}
             className={`h-8 px-3 text-[11px] font-bold rounded-lg transition-all ${
-              isReserved 
-                ? "bg-gray-100 text-gray-400" 
-                : inCart 
-                  ? "border-blue-500 text-blue-500 hover:bg-blue-50" 
-                  : "bg-teal-500 hover:bg-teal-600 text-white border-0 shadow-sm"
+              isReserved ? "bg-gray-100 text-gray-400" : inCart ? "border-blue-500 text-blue-500 hover:bg-blue-50" : "bg-teal-500 hover:bg-teal-600 text-white border-0 shadow-sm"
             }`}
           >
             {isReserved ? "Vendido" : inCart ? "Remover" : "Reservar"}
