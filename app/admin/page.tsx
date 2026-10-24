@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Product, Reservation } from "@/db/schema";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
   Plus,
   Pencil,
   Lock,
+  LogOut,
   Package,
   ClipboardList,
   Loader2,
@@ -45,12 +46,10 @@ import {
   ImageIcon,
   X,
   Ruler,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UploadButton } from "@/lib/uploadthing";
-
-const ADMIN_PASSWORD = "bazar2026";
 
 type ReservationWithProduct = Reservation & { product?: { name: string } };
 
@@ -61,6 +60,14 @@ export default function Admin() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
+
+  // Mantém o login ao recarregar a página (a sessão fica em cookie httpOnly)
+  useEffect(() => {
+    fetch("/api/admin/login")
+      .then((r) => r.json())
+      .then((d) => setAuthenticated(Boolean(d.authenticated)))
+      .catch(() => {});
+  }, []);
 
   // Estados do Formulário
   const [formName, setFormName] = useState("");
@@ -76,27 +83,50 @@ export default function Admin() {
     queryKey: ["admin-products"],
     queryFn: async () => {
       const res = await fetch("/api/products");
+      if (!res.ok) throw new Error("Erro ao carregar produtos");
       return res.json();
     },
     enabled: authenticated,
   });
 
-  // Busca de Reservas (A parte que havia sumido)
+  // Busca de Reservas (rota protegida: se a sessão expirar, volta para o login)
   const { data: reservations, isLoading: reservationsLoading } = useQuery<
     ReservationWithProduct[]
   >({
     queryKey: ["admin-reservations"],
     queryFn: async () => {
       const res = await fetch("/api/reservations");
+      if (res.status === 401) {
+        setAuthenticated(false);
+        throw new Error("Sessão expirada");
+      }
+      if (!res.ok) throw new Error("Erro ao carregar reservas");
       return res.json();
     },
     enabled: authenticated,
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) setAuthenticated(true);
-    else toast.error("Senha incorreta.");
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) throw new Error();
+      setPassword("");
+      setAuthenticated(true);
+    } catch {
+      toast.error("Senha incorreta.");
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/login", { method: "DELETE" }).catch(() => {});
+    queryClient.removeQueries({ queryKey: ["admin-reservations"] });
+    queryClient.removeQueries({ queryKey: ["admin-products"] });
+    setAuthenticated(false);
   };
 
   const openNewProduct = () => {
@@ -149,6 +179,7 @@ export default function Admin() {
     try {
       const res = await fetch("/api/products/admin", {
         method: editingProduct ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editingProduct?.id,
           name: formName,
@@ -206,6 +237,14 @@ export default function Admin() {
           </Button>
         </Link>
         <h1 className="text-lg font-bold">Painel Admin - EcoBazar</h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" /> Sair
+        </Button>
       </header>
 
       <main className="container py-6">
@@ -255,6 +294,7 @@ export default function Admin() {
                         <TableCell>
                           <img
                             src={p.imageUrl || ""}
+                            alt={p.name}
                             className="h-10 w-10 rounded object-cover border"
                           />
                         </TableCell>
@@ -377,6 +417,7 @@ export default function Admin() {
                 <div className="relative h-48 w-full bg-gray-50 rounded-lg border flex items-center justify-center overflow-hidden">
                   <img
                     src={formImageUrl}
+                    alt="Foto do produto"
                     className="h-full w-full object-contain"
                   />
                   <Button
